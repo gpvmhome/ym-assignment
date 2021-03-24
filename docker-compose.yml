@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  node-crud:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+      - "8081:8081"
+    container_name: node-crud
+    environment:
+      - APP=CRUD
+      - mongoUrl='mongodb://mongoDB:27017'
+    links:
+      - mongoDB
+  mongoDB:
+    image: mongo
+    ports:
+      - "27017:27017"
+    container_name: mongoDB
+    volumes:
+      - ./data/:/data/db

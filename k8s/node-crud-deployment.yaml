@@ -1,0 +1,95 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-crud-deployment
+  namespace: ym-assignment
+  labels:
+    k8s-app: node-crud
+spec:
+  progressDeadlineSeconds: 420
+  revisionHistoryLimit: 1
+  replicas: 2
+  selector:
+    matchLabels:
+      k8s-app: node-crud
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        k8s-app: node-crud
+    spec:
+      containers:
+        - name: node-crud
+          image: node-crud_node-crud
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+            - containerPort: 8081
+              name: prometheusagent
+          readinessProbe:
+            tcpSocket:
+              port: 3100
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            tcpSocket:
+              port: 3100
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 60
+          env:
+            - name: APP
+              value: CRUD
+            - name: mongoUrl
+              value: 'mongodb://mongo-service.mongo.svc.cluster.local:27017'
+          resources:
+            limits:
+              cpu: 50m
+              memory: 350Mi
+            requests:
+              cpu: 30m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-crud-service
+  namespace: ym-assignment
+  labels:
+    k8s-svc: node-crud-service
+spec:
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 81
+      targetPort: prometheusagent
+      protocol: TCP
+      name: prometheus
+  selector:
+    k8s-app: node-crud
+  type: NodePort
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: node-crud-hpa
+  namespace: ym-assignment
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: node-crud-deployment
+    apiVersion: extensions/v1beta1
+  minReplicas: 2
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 95
