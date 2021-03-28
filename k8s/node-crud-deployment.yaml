@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: node-crud
-          image: gpvm/ym:latest
+          image: gpvmhome/ym:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
